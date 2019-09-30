@@ -56,6 +56,14 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   res.redirect('/urls');
 });
 
+app.post('/urls/:id', (req, res) => {
+  console.log('PUT> ', req.params.id);
+  urlDatabase[req.params.id] = req.body.longURL;
+  res.redirect('/urls');
+  // delete urlDatabase[req.params.shortURL];
+  // res.redirect('/urls');
+});
+
 const generateRandomString = stringLength => {
   const baseChar = [[65, 90], [97, 122], [48, 57]];
   const result = [];
