@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/jomicm/tinyapp/issues"
   },
-  "homepage": "https://github.com/jomicm/tinyapp#readme"
+  "homepage": "https://github.com/jomicm/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
