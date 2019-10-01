@@ -1,209 +1,159 @@
 const express = require('express');
 const bodyParser = require("body-parser");
-// const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
+const methodOverride = require('method-override');
+
+// Helper functions
+const { generateRandomString, urlsForUser, writeMessage, resetMessage } = require('./helpers/helpers');
+const { validateUser, validatePassword, validateUserExists, validateIfNewUser} = require('./helpers/validations');
+
+// Initializations
 const app = express();
 const PORT = 8080;
+const urlDatabase = {};
+const users = {};
 
-app.set("view engine", "ejs");
+// Middlewares
 app.use(bodyParser.urlencoded({extended: true}));
-// app.use(cookieParser());
 app.use(cookieSession({
   name: 'session',
   keys: ['lallavemasseguradelmundo'],
-  // Cookie Options
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
+app.use(methodOverride('_method'));
+// My Middleware to Reset messages so next renders don't show false information
+app.use((req, res, next) => {
+  resetMessage(app);
+  next();
+});
 
-const urlDatabase = {
-  // "b2xVn2": "http://www.lighthouselabs.ca",
-  // "9sm5xK": "http://www.google.com"
-};
+// Settings
+app.set("view engine", "ejs");
 
-const users = {
-  "userRandomID": {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "pp"
-  },
-  "user2RandomID": {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk"
-  },
-  "genrandom": {
-    id: "genrandom",
-    email: "a@a.mx",
-    password: "a"
-  }
-};
-
+// Server StartUp
 app.listen(PORT, () => {
   console.log(`TinyApp running on port: ${PORT}!`);
 });
 
-// app.get("/urls.json", (req, res) => {
-//   res.json(urlDatabase);
-// });
-
+// GET > Redirects to main link table
 app.get("/", (req, res) => {
   res.redirect('/urls');
 });
 
-// GET AND RENDER MAIN URLS TABLE
+// GET > Renders the main link table to a valid user
 app.get('/urls', (req, res) => {
   const user = users[req.session.user_id];
   const userURLS = urlsForUser(urlDatabase, req.session.user_id);
   let templateVars = { urls: userURLS, user };
+  // If the user is not logged in, redirect to login
+  if (validateIfNewUser(res, user, app)) return;
+  // If user has no records, show a message to encourage him to add records
+  if (!userURLS.length) {
+    writeMessage(app, 'info', "It looks like you don't have URLS yet. First add some cool URLs!");
+  }
   res.render('urls_index', templateVars);
 });
 
-// GET AND RENDER NEW URL TEMPLATE
+// GET > Renders template to create a new URL
 app.get("/urls/new", (req, res) => {
   const user = users[req.session.user_id];
-  if (!user) {
-    res.redirect('/login');
-    return;
-  }
+  // If the user is not logged in, redirect to login
+  if (validateIfNewUser(res, user, app)) return;
   let templateVars = { user };
   res.render("urls_new", templateVars);
 });
 
-// GET SPECIFIC URL
+// GET > Renders the information template using a shortURL
 app.get('/urls/:shortURL', (req, res) => {
   const user = users[req.session.user_id];
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user };
+  let templateVars = {
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL].longURL, user
+  };
   res.render('urls_show', templateVars);
 });
 
-// REDIRECT ANY TINY URL
+// GET > Redirects to longURL from shortURL
 app.get('/u/:shortURL', (req, res) => {
+  if (!urlDatabase[req.params.shortURL]) {
+    res.status(404).send('The shortURL does not exist.');
+    return;
+  }
+  // Get any visit
+  urlDatabase[req.params.shortURL].visits = Number(urlDatabase[req.params.shortURL].visits) + 1;
+  // Get unique visits based on cookies for every user
+  const user = users[req.session.user_id];
+  if (user) {
+    // Add unique visitors id to the array to count length when displayed
+    let uniqueVisits = [...new Set([...urlDatabase[req.params.shortURL].uniqueVisits, user])];
+    urlDatabase[req.params.shortURL].uniqueVisits = uniqueVisits;
+  }
   res.redirect(urlDatabase[req.params.shortURL].longURL);
 });
 
-// POST a new URL
+// POST > Adds a new URL
 app.post('/urls', (req, res) => {
   const randomShort = generateRandomString(6);
-  urlDatabase[randomShort] = { longURL: req.body.longURL, userID: req.session.user_id, date: new Date() };
+  urlDatabase[randomShort] = { longURL: req.body.longURL, userID: req.session.user_id, date: new Date(), visits: 0, uniqueVisits: [] };
   res.redirect('/urls/' + randomShort);
 });
 
-// DELETE a URL
-app.post('/urls/:shortURL/delete', (req, res) => {
-  const user = users[req.session.user_id];
-  if (!user || urlDatabase[req.params.shortURL].userID !== user.id) {
-    res.status(401).send('Unauthorized');
-    return;
-  }
+// DELETE > Deletes a URL from a valid user
+app.delete('/urls/:shortURL/delete', (req, res) => {
+  // If validation fails then return otherwise continue
+  if (!validateUserExists(req, res, users, urlDatabase)) return true;
   delete urlDatabase[req.params.shortURL];
   res.redirect('/urls');
 });
 
-// PUT a URL
-app.post('/urls/:id', (req, res) => {
-  const user = users[req.session.user_id];
-  //const valid = isFieldValueByKey(users, 'email', req.body.email);
-  if (!user || urlDatabase[req.params.id].userID !== user.id) {
-    res.status(401).send('Unauthorized');
-    return;
-  }
-  urlDatabase[req.params.id].longURL = req.body.longURL;
+// PUT > Updates an existing URL for a valid user
+app.put('/urls/:shortURL', (req, res) => {
+  // If validation fails then return otherwise continue
+  if (!validateUserExists(req, res, users, urlDatabase)) return true;
+  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
   res.redirect('/urls');
 });
-
-// POST LOGOUT
+  
+// POST > Logs out the user
 app.post('/logout', (req, res) => {
   req.session = null;
-  //res.clearCookie('user_id');
   res.redirect('/urls');
 });
 
-// GET AND RENDER REGISTER
+// GET > Renders registration template
 app.get('/register', (req, res) => {
   const user = users[req.session.user_id];
   let templateVars = { user };
   res.render("urls_register", templateVars);
 });
 
-// POST a USER
+// POST > Creates a new user
 app.post('/register', (req, res) => {
-  let error = '';
-  error = !req.body.email || !req.body.password ? 'Empty fields not allowed' : error;
-  const valid = isFieldValueByKey(users, 'email', req.body.email);
-  error = valid ? 'Email already exists' : error;
-  if (error) {
-    res.status(400).send(error);
-    return;
-  }
+  // If validation fails then return otherwise continue
+  if (!validateUser(res, req.body, users, true, app)) return;
   const id = generateRandomString(6);
   users[id] = { id, email: req.body.email, password: bcrypt.hashSync(req.body.password, 10) };
+  // eslint-disable-next-line camelcase
   req.session.user_id = id;
-  //res.cookie('user_id', id);
   res.redirect('/urls');
 });
 
-// GET AND RENDER LOGIN
+// GET > Renders login template
 app.get('/login', (req, res) => {
   const user = users[req.session.user_id];
   let templateVars = { user };
   res.render("urls_login", templateVars);
 });
 
-// POST LOGIN
+// POST > Logs in a user if valid information was received
 app.post('/login', (req, res) => {
-  let error = '';
-  error = !req.body.email || !req.body.password ? 'Empty fields not allowed. ' : error;
-  const valid = isFieldValueByKey(users, 'email', req.body.email);
-  error = !valid && !error ? 'User does not exist. ' : error;
-  if (error) {
-    res.status(400).send(error);
-    return;
-  }
-  const userId = getIdByValue(users, 'email', req.body.email);
-  const userPassword = users[userId]['password'];
-  const validPassword = bcrypt.compareSync(req.body.password, userPassword);
-  if (!validPassword) {
-    res.status(403).send('Invalid Password');
-    return;
-  }
-  //res.cookie('user_id', userId);
+  // If validation fails then return otherwise continue
+  if (!validateUser(res, req.body, users, false, app)) return;
+  const userId = validatePassword(res, users, 'email', req.body, app);
+  // If validation of password fails then return otherwise continue
+  if (!userId) return;
+  // eslint-disable-next-line camelcase
   req.session.user_id = userId;
   res.redirect('/urls');
 });
-
-// HELPER FUNCTIONS (MAYBE THEY SHOULD BE ELSEWHERE)
-const generateRandomString = stringLength => {
-  const baseChar = [[65, 90], [97, 122], [48, 57]];
-  const result = [];
-  for (let i = 0; i < stringLength; i++) {
-    const randomChars = baseChar.map(x => String.fromCharCode(x[0] + getRandomTo(x[1] - x[0])));
-    result.push(randomChars[getRandomTo(2)]);
-  }
-  return result.join('');
-};
-const getRandomTo = number => Math.floor(Math.random() * (number + 1));
-
-const isFieldValueByKey = (object, key, value) => {
-  let res = false;
-  Object.keys(object).map(k => {
-    if (object[k][key] === value) res = true;
-  });
-  return res;
-};
-
-const getIdByValue = (object, key, value) => {
-  let keyId = '';
-  Object.keys(object).map(k => {
-    if (object[k][key] === value) keyId = k;
-  });
-  return keyId;
-};
-
-const urlsForUser = (object, userID) => {
-  let urls = [];
-  Object.keys(object).map(k => {
-    if (object[k].userID === userID) urls.push({ shortURL: k, longURL: object[k].longURL, date: object[k].date });
-  });
-  return urls;
-};

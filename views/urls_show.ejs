@@ -21,7 +21,7 @@
     </div>
     <div class="card-footer text-muted text-center">
         <h2 class="card-title">Edit</h2>
-        <form class="form-inline d-flex justify-content-center" action="/urls/<%= shortURL %>" method="POST">
+        <form class="form-inline d-flex justify-content-center" action="/urls/<%= shortURL %>?_method=PUT" method="POST">
           <label for="longURL">Enter a URL:</label>
           <input class="form-control" 
             type="text" 

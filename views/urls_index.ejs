@@ -32,8 +32,10 @@
             <td><a href="/u/<%= url.shortURL %>"><%= url.shortURL %></a></td>
             <td><a href="<%= url.longURL %>"><%= url.longURL %></a></td>
             <td><%= url.date.toString().split('GMT')[0] %></td>
+            <td><%= url.visits %></td>
+            <td><%= url.uniqueVisits.length %></td>
             <td><a href="/urls/<%= url.shortURL %>"><button class="btn btn-outline-primary"><i class="fa fa-edit"></i>  Edit</button></a></td>
-            <td><form method="POST" action="/urls/<%= url.shortURL %>/delete"><button class="btn btn-outline-danger"><i class="fa fa-trash"></i>  Delete</button></form></td>
+            <td><form method="POST" action="/urls/<%= url.shortURL %>/delete?_method=DELETE"><button class="btn btn-outline-danger"><i class="fa fa-trash"></i>  Delete</button></form></td>
           </tr>
         <% } %>
       </tbody>
