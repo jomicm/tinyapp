@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
+const bcrypt = require('bcrypt');
 const app = express();
 const PORT = 8080;
 
@@ -123,17 +124,21 @@ app.get('/register', (req, res) => {
   res.render("urls_register", templateVars);
 });
 
-// POST a REGISTRY
+// POST a USER
 app.post('/register', (req, res) => {
   let error = '';
   error = !req.body.email || !req.body.password ? 'Empty fields not allowed' : error;
+  const valid = isFieldValueByKey(users, 'email', req.body.email);
   error = valid ? 'Email already exists' : error;
   if (error) {
     res.status(400).send(error);
     return;
   }
   const id = generateRandomString(6);
-  users[id] = { id, email: req.body.email, password: req.body.password };
+  users[id] = { id, email: req.body.email, password: bcrypt.hashSync(req.body.password, 10) };
+  console.log('users[id]', users[id]);
+
+  //users[id] = { id, email: req.body.email, password: req.body.password };
   res.cookie('user_id', id);
   res.redirect('/urls');
 });
@@ -157,7 +162,10 @@ app.post('/login', (req, res) => {
   }
   const userId = getIdByValue(users, 'email', req.body.email);
   const userPassword = users[userId]['password'];
-  const validPassword = userPassword === req.body.password;
+  console.log('userPassword', userPassword);
+  console.log('Compare to', req.body.password);
+  //const validPassword = userPassword === req.body.password;
+  const validPassword = bcrypt.compareSync(req.body.password, userPassword);
   if (!validPassword) {
     res.status(403).send('Invalid Password');
     return;

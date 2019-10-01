@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/jomicm/tinyapp#readme",
   "dependencies": {
+    "bcrypt": "^3.0.6",
     "body-parser": "^1.19.0",
     "ejs": "^2.7.1",
     "express": "^4.17.1"
