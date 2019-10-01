@@ -13,6 +13,19 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "pp"
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  }
+};
+
 app.get('/', (req, res) => {
   res.send('Hello');
 });
@@ -30,16 +43,20 @@ app.get("/hello", (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  let templateVars = { urls: urlDatabase, username: req.cookies["username"] || '' };
+  const user = users[req.cookies["user_id"]];
+  let templateVars = { urls: urlDatabase, user };
   res.render('urls_index', templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const user = users[req.cookies["user_id"]];
+  let templateVars = { user };
+  res.render("urls_new", templateVars);
 });
 
 app.get('/urls/:shortURL', (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies["username"] || '' };
+  const user = users[req.cookies["user_id"]];
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user };
   res.render('urls_show', templateVars);
 });
 
@@ -64,16 +81,69 @@ app.post('/urls/:id', (req, res) => {
   res.redirect('/urls');
 });
 
-app.post('/login', (req, res) => {
-  console.log('LOGIN> ', req.body.username);
-  res.cookie('username', req.body.username);
+// app.post('/login', (req, res) => {
+//   console.log('LOGIN> ', req.body.username);
+//   //res.cookie('username', req.body.username);
+//   res.cookie('user_id', req.body.username);
+//   res.redirect('/urls');
+// });
+
+app.post('/logout', (req, res) => {
+  //const coo = req.cookies["user_id"];
+  //console.log('LOGOUT> COOKIE> ', coo);
+  //res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect('/urls');
 });
 
-app.post('/logout', (req, res) => {
-  const coo = req.cookies["username"];
-  console.log('LOGOUT> COOKIE> ', coo);
-  res.clearCookie('username');
+app.get('/register', (req, res) => {
+  const user = users[req.cookies["user_id"]];
+  let templateVars = { user };
+  res.render("urls_register", templateVars);
+});
+
+app.post('/register', (req, res) => {
+  if (!req.body.email || !req.body.password) {
+    res.status(400).send('Empty fields not allowed');
+    return;
+  }
+  const valid = isFieldValueByKey(users, 'email', req.body.email);
+  console.log('EMail validation for', req.body.email, valid);
+  if (valid) {
+    res.status(400).send('Email already exists');
+    return;
+  }
+  const id = generateRandomString(6);
+  users[id] = { id, email: req.body.email, password: req.body.password };
+  // console.log('users', users);
+  res.cookie('user_id', id);
+  res.redirect('/urls');
+});
+
+app.get('/login', (req, res) => {
+  const user = users[req.cookies["user_id"]];
+  let templateVars = { user };
+  res.render("urls_login", templateVars);
+});
+
+app.post('/login', (req, res) => {
+  if (!req.body.email || !req.body.password) {
+    res.status(400).send('Empty fields not allowed');
+    return;
+  }
+  const valid = isFieldValueByKey(users, 'email', req.body.email);
+  if (!valid) {
+    res.status(403).send('User does not exist');
+    return;
+  }
+  const userId = getIdByValue(users, 'email', req.body.email);
+  const userPassword = users[userId]['password'];
+  const validPassword = userPassword === req.body.password;
+  if (!validPassword) {
+    res.status(403).send('Invalid Password');
+    return;
+  }
+  res.cookie('user_id', userId);
   res.redirect('/urls');
 });
 
@@ -87,3 +157,19 @@ const generateRandomString = stringLength => {
   return result.join('');
 };
 const getRandomTo = number => Math.floor(Math.random() * (number + 1));
+
+const isFieldValueByKey = (object, key, value) => {
+  let res = false;
+  Object.keys(object).map(k => {
+    if (object[k][key] === value) res = true;
+  });
+  return res;
+};
+
+const getIdByValue = (object, key, value) => {
+  let keyId = '';
+  Object.keys(object).map(k => {
+    if (object[k][key] === value) keyId = k;
+  });
+  return keyId;
+};
