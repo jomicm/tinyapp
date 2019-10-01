@@ -13,7 +13,7 @@ TinyApp is a full stack web application built with Node and Express that allows 
 !["Edit a URL"](https://raw.githubusercontent.com/jomicm/tinyapp/master/docs/edit-url.png)
 - Welcome new users, just be sure to use an email which does not exist
 !["Register new users"](https://raw.githubusercontent.com/jomicm/tinyapp/master/docs/register-error.png)
-- Once registered start by adding new links!
+- Once a user is registered, start by adding new links!
 !["Add new URLs"](https://raw.githubusercontent.com/jomicm/tinyapp/master/docs/urls-empty.png)
 
 ## Dependencies
