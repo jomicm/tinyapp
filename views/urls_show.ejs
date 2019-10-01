@@ -19,9 +19,9 @@
       <h5 class="card-title">TinyURL for: <%= longURL %></h5>
       <p class="card-text">Short URL: <a href="/u/<%= shortURL %>"><%= shortURL %></a></p>
     </div>
-    <div class="card-footer text-muted text-center" style="margin: 0 auto;">
+    <div class="card-footer text-muted text-center">
         <h2 class="card-title">Edit</h2>
-        <form class="form-inline" action="/urls/<%= shortURL %>" method="POST">
+        <form class="form-inline d-flex justify-content-center" action="/urls/<%= shortURL %>" method="POST">
           <label for="longURL">Enter a URL:</label>
           <input class="form-control" 
             type="text" 

@@ -9,8 +9,8 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  // "b2xVn2": "http://www.lighthouselabs.ca",
+  // "9sm5xK": "http://www.google.com"
 };
 
 const users = {
@@ -23,117 +23,136 @@ const users = {
     id: "user2RandomID",
     email: "user2@example.com",
     password: "dishwasher-funk"
+  },
+  "genrandom": {
+    id: "genrandom",
+    email: "a@a.mx",
+    password: "a"
   }
 };
 
-app.get('/', (req, res) => {
-  res.send('Hello');
-});
+// app.get('/', (req, res) => {
+//   res.send('Hello');
+// });
 
 app.listen(PORT, () => {
   console.log(`Example app running on port: ${PORT}!`);
 });
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
+// app.get("/urls.json", (req, res) => {
+//   res.json(urlDatabase);
+// });
+
+app.get("/", (req, res) => {
+  res.redirect('/urls');
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
+// GET AND RENDER MAIN URLS TABLE
 app.get('/urls', (req, res) => {
   const user = users[req.cookies["user_id"]];
-  let templateVars = { urls: urlDatabase, user };
+  const userURLS = urlsForUser(urlDatabase, req.cookies["user_id"]);
+  console.log('userURLS', userURLS);
+  let templateVars = { urls: userURLS, user };
   res.render('urls_index', templateVars);
 });
 
+// GET AND RENDER NEW URL TEMPLATE
 app.get("/urls/new", (req, res) => {
   const user = users[req.cookies["user_id"]];
+  if (!user) {
+    res.redirect('/login');
+    return;
+  }
   let templateVars = { user };
   res.render("urls_new", templateVars);
 });
 
+// GET SPECIFIC URL
 app.get('/urls/:shortURL', (req, res) => {
   const user = users[req.cookies["user_id"]];
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user };
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user };
   res.render('urls_show', templateVars);
 });
 
+// REDIRECT ANY TINY URL
 app.get('/u/:shortURL', (req, res) => {
-  res.redirect(urlDatabase[req.params.shortURL]);
+  res.redirect(urlDatabase[req.params.shortURL].longURL);
 });
 
+// POST a new URL
 app.post('/urls', (req, res) => {
   const randomShort = generateRandomString(6);
-  urlDatabase[randomShort] = req.body.longURL;
+  urlDatabase[randomShort] = { longURL: req.body.longURL, userID: req.cookies["user_id"] };
+  console.log('urlDatabase', urlDatabase);
   res.redirect('/urls/' + randomShort);
 });
 
+// DELETE a URL
 app.post('/urls/:shortURL/delete', (req, res) => {
+  const user = users[req.cookies["user_id"]];
+  if (!user || urlDatabase[req.params.shortURL].userID !== user.id) {
+    res.status(401).send('Unauthorized');
+    return;
+  }
   delete urlDatabase[req.params.shortURL];
   res.redirect('/urls');
 });
 
+// PUT a URL
 app.post('/urls/:id', (req, res) => {
-  console.log('PUT> ', req.params.id);
-  urlDatabase[req.params.id] = req.body.longURL;
+  const user = users[req.cookies["user_id"]];
+  //const valid = isFieldValueByKey(users, 'email', req.body.email);
+  if (!user || urlDatabase[req.params.id].userID !== user.id) {
+    res.status(401).send('Unauthorized');
+    return;
+  }
+  urlDatabase[req.params.id].longURL = req.body.longURL;
   res.redirect('/urls');
 });
 
-// app.post('/login', (req, res) => {
-//   console.log('LOGIN> ', req.body.username);
-//   //res.cookie('username', req.body.username);
-//   res.cookie('user_id', req.body.username);
-//   res.redirect('/urls');
-// });
-
+// POST LOGOUT
 app.post('/logout', (req, res) => {
-  //const coo = req.cookies["user_id"];
-  //console.log('LOGOUT> COOKIE> ', coo);
-  //res.clearCookie('username');
   res.clearCookie('user_id');
   res.redirect('/urls');
 });
 
+// GET AND RENDER REGISTER
 app.get('/register', (req, res) => {
   const user = users[req.cookies["user_id"]];
   let templateVars = { user };
   res.render("urls_register", templateVars);
 });
 
+// POST a REGISTRY
 app.post('/register', (req, res) => {
-  if (!req.body.email || !req.body.password) {
-    res.status(400).send('Empty fields not allowed');
-    return;
-  }
-  const valid = isFieldValueByKey(users, 'email', req.body.email);
-  console.log('EMail validation for', req.body.email, valid);
-  if (valid) {
-    res.status(400).send('Email already exists');
+  let error = '';
+  error = !req.body.email || !req.body.password ? 'Empty fields not allowed' : error;
+  error = valid ? 'Email already exists' : error;
+  if (error) {
+    res.status(400).send(error);
     return;
   }
   const id = generateRandomString(6);
   users[id] = { id, email: req.body.email, password: req.body.password };
-  // console.log('users', users);
   res.cookie('user_id', id);
   res.redirect('/urls');
 });
 
+// GET AND RENDER LOGIN
 app.get('/login', (req, res) => {
   const user = users[req.cookies["user_id"]];
   let templateVars = { user };
   res.render("urls_login", templateVars);
 });
 
+// POST LOGIN
 app.post('/login', (req, res) => {
-  if (!req.body.email || !req.body.password) {
-    res.status(400).send('Empty fields not allowed');
-    return;
-  }
+  let error = '';
+  error = !req.body.email || !req.body.password ? 'Empty fields not allowed. ' : error;
   const valid = isFieldValueByKey(users, 'email', req.body.email);
-  if (!valid) {
-    res.status(403).send('User does not exist');
+  error = !valid && !error ? 'User does not exist. ' : error;
+  if (error) {
+    res.status(400).send(error);
     return;
   }
   const userId = getIdByValue(users, 'email', req.body.email);
@@ -147,6 +166,7 @@ app.post('/login', (req, res) => {
   res.redirect('/urls');
 });
 
+// HELPER FUNCTIONS (MAYBE THEY SHOULD BE ELSEWHERE)
 const generateRandomString = stringLength => {
   const baseChar = [[65, 90], [97, 122], [48, 57]];
   const result = [];
@@ -172,4 +192,12 @@ const getIdByValue = (object, key, value) => {
     if (object[k][key] === value) keyId = k;
   });
   return keyId;
+};
+
+const urlsForUser = (object, userID) => {
+  let urls = [];
+  Object.keys(object).map(k => {
+    if (object[k].userID === userID) urls.push({ shortURL: k, longURL: object[k].longURL });
+  });
+  return urls;
 };
