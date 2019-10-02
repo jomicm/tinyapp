@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const {isFieldValueByKey, getIdByValue, writeMessage} = require('./helpers');
 
+// Uses function (validateParams) to determine if a user is authorized or not
 const validateUser = (res, params, users, validMail, app) => {
   const paramValidations = validateUserParams(params, users, validMail);
   if (!paramValidations.valid) {
@@ -11,6 +12,7 @@ const validateUser = (res, params, users, validMail, app) => {
   return true;
 };
 
+// Validate if register/login templates have wrong input information
 const validateUserParams = (params, users, validMail) => {
   if (!params.email || !params.password) {
     return ({valid: false, errorMessage: 'Empty fields not allowed'});
@@ -23,6 +25,7 @@ const validateUserParams = (params, users, validMail) => {
   }
 };
 
+// Validates a password of a given user using bcrypt
 const validatePassword = (res, users, key, params, app) => {
   const userId = getIdByValue(users, key, params.email);
   const userPassword = users[userId].password;
@@ -33,9 +36,9 @@ const validatePassword = (res, users, key, params, app) => {
     return null;
   }
   return userId;
-  // return validPassword ? userId : null;
 };
 
+// Validate if a given user exists
 const validateUserExists = (req, res, users, urlDatabase) => {
   const user = users[req.session.user_id];
   console.log('Paramas N>', urlDatabase[req.params.shortURL].userID);
@@ -46,6 +49,7 @@ const validateUserExists = (req, res, users, urlDatabase) => {
   return true;
 };
 
+// Validate if a user is new to our site
 const validateIfNewUser = (res, user, app) => {
   if (!user) {
     writeMessage(app, 'info', "First you have to login or signup if you don't have an account!");

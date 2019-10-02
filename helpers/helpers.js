@@ -1,3 +1,6 @@
+// Helper functions
+
+// Creates a random alphanumeric string to be used as key
 const generateRandomString = stringLength => {
   const baseChar = [[65, 90], [97, 122], [48, 57]];
   const result = [];
@@ -7,8 +10,10 @@ const generateRandomString = stringLength => {
   }
   return result.join('');
 };
+// Generates a random number from 0 to a given top limit
 const getRandomTo = number => Math.floor(Math.random() * (number + 1));
 
+// Finds out if the given pair key-value strings are present in a given object
 const isFieldValueByKey = (object, key, value) => {
   let res = false;
   Object.keys(object).map(k => {
@@ -17,6 +22,7 @@ const isFieldValueByKey = (object, key, value) => {
   return res;
 };
 
+// Retrieves an ID(key) from a pair key-value data
 const getIdByValue = (object, key, value) => {
   let keyId = undefined;
   Object.keys(object).map(k => {
@@ -25,6 +31,7 @@ const getIdByValue = (object, key, value) => {
   return keyId;
 };
 
+// Gets all the URLs for a given user
 const urlsForUser = (object, userID) => {
   let urls = [];
   Object.keys(object).map(k => {
@@ -40,10 +47,12 @@ const urlsForUser = (object, userID) => {
   return urls;
 };
 
+// Writes a message to a global variable in the app(Express) object so it could be printed from the templates
 const writeMessage = (app, type, msg) => {
   app.locals.message = { type, msg };
 };
 
+// Resets the messages so templates don't display wrong messages
 const resetMessage = (app) => {
   setTimeout(() => app.locals.message = null, 200);
 };
