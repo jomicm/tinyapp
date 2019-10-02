@@ -79,10 +79,14 @@ app.get('/u/:shortURL', (req, res) => {
   // Get any visit
   urlDatabase[req.params.shortURL].visits = Number(urlDatabase[req.params.shortURL].visits) + 1;
   // Get unique visits based on cookies for every user
-  const user = users[req.session.user_id];
-  if (user) {
+  let uniqueVisitorCookie = req.session.uniqueVisitor;
+  if (!uniqueVisitorCookie) {
     // Add unique visitors id to the array to count length when displayed
-    let uniqueVisits = [...new Set([...urlDatabase[req.params.shortURL].uniqueVisits, user])];
+    const uniqueVisitorID = generateRandomString(6);
+    req.session.uniqueVisitor = uniqueVisitorID;
+    urlDatabase[req.params.shortURL].uniqueVisits.push(uniqueVisitorID);
+  } else {
+    let uniqueVisits = [...new Set([...urlDatabase[req.params.shortURL].uniqueVisits, uniqueVisitorCookie])];
     urlDatabase[req.params.shortURL].uniqueVisits = uniqueVisits;
   }
   res.redirect(urlDatabase[req.params.shortURL].longURL);
