@@ -66,8 +66,12 @@ app.get('/urls/:shortURL', (req, res) => {
   const user = users[req.session.user_id];
   let templateVars = {
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL].longURL, user
+    longURL: urlDatabase[req.params.shortURL].longURL,
+    user,
+    uniqueVisits: urlDatabase[req.params.shortURL].uniqueVisits,
   };
+  console.log('templateVars', templateVars);
+  
   res.render('urls_show', templateVars);
 });
 // GET > Redirects to longURL from shortURL
@@ -80,15 +84,20 @@ app.get('/u/:shortURL', (req, res) => {
   urlDatabase[req.params.shortURL].visits = Number(urlDatabase[req.params.shortURL].visits) + 1;
   // Get unique visits based on cookies for every user
   let uniqueVisitorCookie = req.session.uniqueVisitor;
+  console.log('uniqueVisitorCookie', uniqueVisitorCookie);
   if (!uniqueVisitorCookie) {
     // Add unique visitors id to the array to count length when displayed
     const uniqueVisitorID = generateRandomString(6);
     req.session.uniqueVisitor = uniqueVisitorID;
-    urlDatabase[req.params.shortURL].uniqueVisits.push(uniqueVisitorID);
+    urlDatabase[req.params.shortURL].uniqueVisits.push({ id: uniqueVisitorID, timestamp: new Date() });
   } else {
-    let uniqueVisits = [...new Set([...urlDatabase[req.params.shortURL].uniqueVisits, uniqueVisitorCookie])];
-    urlDatabase[req.params.shortURL].uniqueVisits = uniqueVisits;
+    const found = urlDatabase[req.params.shortURL].uniqueVisits.filter(visitors => visitors.id === uniqueVisitorCookie);
+    found.timestamp = new Date();
+    console.log(found);
+    //let uniqueVisits = [...new Set([...urlDatabase[req.params.shortURL].uniqueVisits, uniqueVisitorCookie])];
+    //urlDatabase[req.params.shortURL].uniqueVisits = uniqueVisits;
   }
+  console.log('Unique Visits:>>> ', urlDatabase[req.params.shortURL].uniqueVisits);
   res.redirect(urlDatabase[req.params.shortURL].longURL);
 });
 // POST > Adds a new URL

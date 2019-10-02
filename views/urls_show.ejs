@@ -33,6 +33,30 @@
           <button type="submit" class="btn btn-primary">Submit</button>
         </form>
     </div>
+    
+    <% if (uniqueVisits.length) { %>
+      <div style="width: 500px; margin:0 auto;margin-top: 80px;">
+        <h2 style="color:gray">Table of unique visits</h2>
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Unique ID</th>
+              <th scope="col">Date-Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% for (let i = 0; i < uniqueVisits.length; i++) { %>
+              <tr>
+                <th scope="row"><%= i + 1 %></th>
+                <td><%= uniqueVisits[i].id %></td>
+                <td><%= uniqueVisits[i].timestamp.toString().split('GMT')[0] %></td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
   </div>
   <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
