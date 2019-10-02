@@ -41,7 +41,10 @@ const validatePassword = (res, users, key, params, app) => {
 // Validate if a given user exists
 const validateUserExists = (req, res, users, urlDatabase) => {
   const user = users[req.session.user_id];
-  console.log('Paramas N>', urlDatabase[req.params.shortURL].userID);
+  if (!urlDatabase[req.params.shortURL]) {
+    res.redirect('/notfound');
+    return false;
+  }
   if (!user || urlDatabase[req.params.shortURL].userID !== user.id) {
     res.status(401).send('Unauthorized');
     return false;

@@ -15,6 +15,8 @@ TinyApp is a full stack web application built with Node and Express that allows 
 !["Register new users"](https://raw.githubusercontent.com/jomicm/tinyapp/master/docs/register-error.png)
 - Once a user is registered, start by adding new links!
 !["Add new URLs"](https://raw.githubusercontent.com/jomicm/tinyapp/master/docs/urls-empty.png)
+- Not found template if you get lost
+!["Add new URLs"](https://raw.githubusercontent.com/jomicm/tinyapp/master/docs/not-found.png)
 
 ## Dependencies
 
@@ -40,6 +42,7 @@ TinyApp is a full stack web application built with Node and Express that allows 
 - Added a table of visits when you edit a link.
 - `method-override` included to use `PUT` and `DELETE` in Express.
 - Bootstrap alerts included to handle messages (success, info, danger) to the user.
+- Added redirection to all Not Found routes
 
 ## Authors
 
