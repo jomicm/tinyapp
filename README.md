@@ -36,7 +36,7 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 - Added date and time when the URL was created.
 - Count all visits including anonymous ones.
-- Count unique visits of registered users.
+- Count unique visits of all visitors.
 - `method-override` included to use `PUT` and `DELETE` in Express.
 - Bootstrap alerts included to handle messages (success, info, danger) to the user.
 
