@@ -63,6 +63,7 @@ app.get("/urls/new", (req, res) => {
 });
 // GET > Renders the information template using a shortURL
 app.get('/urls/:shortURL', (req, res) => {
+  if (!validateUserExists(req, res, users, urlDatabase))  return;
   const user = users[req.session.user_id];
   let templateVars = {
     shortURL: req.params.shortURL,
@@ -82,6 +83,7 @@ app.get('/u/:shortURL', (req, res) => {
   urlDatabase[req.params.shortURL].visits = Number(urlDatabase[req.params.shortURL].visits) + 1;
   // Get unique visits based on cookies for every user
   let uniqueVisitorCookie = req.session.uniqueVisitor;
+  
   if (!uniqueVisitorCookie) {
     // Add unique visitors id to the array to count length when displayed
     const uniqueVisitorID = generateRandomString(6);
